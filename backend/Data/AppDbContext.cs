@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<ContainerTransaction> ContainerTransactions => Set<ContainerTransaction>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,7 +30,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Delivery>().HasIndex(x => x.OrderId).IsUnique();
         modelBuilder.Entity<OrderDetail>().HasIndex(x => new { x.OrderId, x.ProductId }).IsUnique();
         modelBuilder.Entity<ContainerTransaction>()
-            .HasIndex(x => new { x.OrderId, x.ProductId }).IsUnique();
+            .HasIndex(x => new { x.OrderId, x.ProductId });
+        modelBuilder.Entity<AuditLog>().HasIndex(x => x.CreatedAt);
+        modelBuilder.Entity<AuditLog>().HasIndex(x => new { x.EntityType, x.EntityId });
         modelBuilder.Entity<Payment>().HasIndex(x => new { x.OrderId, x.PaidAt });
 
         modelBuilder.Entity<Product>().ToTable("Products", table =>
@@ -62,6 +65,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             table.HasCheckConstraint("CK_ContainerTransactions_Returned_NonNegative", "[ReturnedQuantity] >= 0");
             table.HasCheckConstraint("CK_ContainerTransactions_Balance_NonNegative", "[BalanceBefore] >= 0 AND [BalanceAfter] >= 0");
         });
+        modelBuilder.Entity<AuditLog>().Property(x => x.OldValues).HasColumnType("nvarchar(max)");
+        modelBuilder.Entity<AuditLog>().Property(x => x.NewValues).HasColumnType("nvarchar(max)");
         modelBuilder.Entity<InventoryTransaction>().ToTable("InventoryTransactions", table =>
         {
             table.HasCheckConstraint("CK_InventoryTransactions_Quantity_Positive", "[Quantity] > 0");
@@ -77,6 +82,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Delivery>().Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         modelBuilder.Entity<InventoryTransaction>().Property(x => x.TransactionType).HasConversion<string>().HasMaxLength(20);
         modelBuilder.Entity<Payment>().Property(x => x.PaymentMethod).HasConversion<string>().HasMaxLength(30);
+        modelBuilder.Entity<ContainerTransaction>().Property(x => x.TransactionType).HasConversion<string>().HasMaxLength(20);
 
         modelBuilder.Entity<Order>()
             .HasOne(x => x.Customer)
@@ -141,6 +147,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<ContainerTransaction>()
             .HasOne(x => x.CreatedByUser).WithMany(x => x.ContainerTransactions)
             .HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<AuditLog>()
+            .HasOne(x => x.User).WithMany(x => x.AuditLogs)
+            .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
 
         foreach (var property in modelBuilder.Model.GetEntityTypes()
                      .SelectMany(entityType => entityType.GetProperties()))

@@ -6,6 +6,7 @@ public interface ICurrentUser
 {
     int Id { get; }
     string Role { get; }
+    string DisplayName => $"{Role} #{Id}";
 }
 
 public sealed class CurrentUser(IHttpContextAccessor accessor) : ICurrentUser
@@ -25,4 +26,7 @@ public sealed class CurrentUser(IHttpContextAccessor accessor) : ICurrentUser
     }
 
     public string Role => Principal.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+    public string DisplayName => Principal.FindFirstValue(ClaimTypes.GivenName)
+        ?? Principal.FindFirstValue(ClaimTypes.Name)
+        ?? $"{Role} #{Id}";
 }

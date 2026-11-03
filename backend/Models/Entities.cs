@@ -18,6 +18,7 @@ public class User
     public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
     public ICollection<Payment> RecordedPayments { get; set; } = new List<Payment>();
     public ICollection<ContainerTransaction> ContainerTransactions { get; set; } = new List<ContainerTransaction>();
+    public ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 }
 
 public class ProductCategory
@@ -129,8 +130,10 @@ public class ContainerTransaction
     public Customer Customer { get; set; } = null!;
     public int ProductId { get; set; }
     public Product Product { get; set; } = null!;
-    public int OrderId { get; set; }
-    public Order Order { get; set; } = null!;
+    public int? OrderId { get; set; }
+    public Order? Order { get; set; }
+    public ContainerTransactionType TransactionType { get; set; } = ContainerTransactionType.Delivery;
+    public int QuantityChange { get; set; }
     public int DeliveredQuantity { get; set; }
     public int ReturnedQuantity { get; set; }
     public int BalanceBefore { get; set; }
@@ -154,6 +157,24 @@ public class Delivery
     public DeliveryStatus Status { get; set; } = DeliveryStatus.Assigned;
     [MaxLength(1000)] public string? FailureReason { get; set; }
     [MaxLength(1000)] public string? Note { get; set; }
+    [MaxLength(200)] public string? RecipientName { get; set; }
+    [MaxLength(500)] public string? ProofImagePath { get; set; }
+    public DateTime? ProofUploadedAt { get; set; }
+}
+
+public class AuditLog
+{
+    public long Id { get; set; }
+    public int? UserId { get; set; }
+    public User? User { get; set; }
+    [MaxLength(150)] public string ActorName { get; set; } = string.Empty;
+    [MaxLength(100)] public string Action { get; set; } = string.Empty;
+    [MaxLength(100)] public string EntityType { get; set; } = string.Empty;
+    [MaxLength(100)] public string? EntityId { get; set; }
+    public string? OldValues { get; set; }
+    public string? NewValues { get; set; }
+    [MaxLength(64)] public string? IpAddress { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public class InventoryTransaction

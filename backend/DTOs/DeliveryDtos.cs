@@ -19,7 +19,16 @@ public sealed record DeliveryDto(
     DeliveryStatus Status,
     string? FailureReason,
     string? Note,
+    string? RecipientName,
+    string? ProofImageUrl,
+    DateTime? ProofUploadedAt,
     OrderDto? Order);
+
+public sealed class UploadDeliveryProofRequest
+{
+    [Required, MaxLength(200)] public string RecipientName { get; set; } = string.Empty;
+    [Required] public IFormFile Image { get; set; } = null!;
+}
 
 public sealed class CompleteDeliveryRequest
 {

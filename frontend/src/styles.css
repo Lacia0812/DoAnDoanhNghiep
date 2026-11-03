@@ -5,6 +5,51 @@
   text-rendering: optimizeLegibility;
 }
 
+.report-filter-card {
+  margin-bottom: 16px;
+}
+
+.report-card {
+  height: 100%;
+}
+
+.report-card .ant-typography {
+  margin-top: 0;
+}
+
+.report-card-icon {
+  display: grid;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 14px;
+  color: #087f8c;
+  background: #e6f7f8;
+  font-size: 24px;
+}
+
+.audit-json {
+  overflow: auto;
+  max-height: 320px;
+  padding: 14px;
+  border: 1px solid #d9e3e8;
+  border-radius: 8px;
+  background: #f7fafb;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.delivery-proof {
+  margin-top: 18px;
+}
+
+.delivery-proof .ant-image {
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -7,6 +7,8 @@ import {
   ShoppingCartOutlined,
   TeamOutlined,
   UserOutlined,
+  FileExcelOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import type { Role } from '../types'
 
@@ -26,6 +28,16 @@ export interface AppRouteConfig {
 export type MenuRouteConfig = AppRouteConfig & { menu: RouteMenuConfig }
 
 export const APP_ROUTES: AppRouteConfig[] = [
+  {
+    path: '/reports',
+    roles: ['Admin'],
+    component: lazy(() => import('../pages/ReportsPage')),
+    menu: {
+      label: 'Báo cáo',
+      icon: <FileExcelOutlined />,
+      order: 15,
+    },
+  },
   {
     path: '/dashboard',
     roles: ['Admin'],
@@ -119,6 +131,16 @@ export const APP_ROUTES: AppRouteConfig[] = [
       label: 'Tài khoản',
       icon: <UserOutlined />,
       order: 70,
+    },
+  },
+  {
+    path: '/audit',
+    roles: ['Admin'],
+    component: lazy(() => import('../pages/AuditPage')),
+    menu: {
+      label: 'Nhật ký hệ thống',
+      icon: <SafetyCertificateOutlined />,
+      order: 80,
     },
   },
 ]

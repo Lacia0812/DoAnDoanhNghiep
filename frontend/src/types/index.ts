@@ -26,6 +26,7 @@ export type CustomerType =
   | 'School'
   | 'Restaurant'
 export type TransactionType = 'StockIn' | 'StockOut'
+export type ContainerTransactionType = 'Delivery' | 'Return' | 'Adjustment'
 
 export interface User {
   id: number
@@ -151,6 +152,9 @@ export interface DeliverySummary {
   completedAt?: string | null
   failureReason?: string | null
   note?: string | null
+  recipientName?: string | null
+  proofImageUrl?: string | null
+  proofUploadedAt?: string | null
 }
 
 export interface Delivery extends DeliverySummary {
@@ -223,8 +227,10 @@ export interface ContainerTransaction {
   customerName: string
   productId: number
   productName: string
-  orderId: number
-  orderCode: string
+  orderId?: number | null
+  orderCode?: string | null
+  transactionType: ContainerTransactionType
+  quantityChange: number
   deliveredQuantity: number
   returnedQuantity: number
   balanceBefore: number
@@ -232,6 +238,19 @@ export interface ContainerTransaction {
   createdAt: string
   createdByName: string
   note?: string | null
+}
+
+export interface AuditLog {
+  id: number
+  userId?: number | null
+  actorName: string
+  action: string
+  entityType: string
+  entityId?: string | null
+  oldValues?: string | null
+  newValues?: string | null
+  ipAddress?: string | null
+  createdAt: string
 }
 
 export interface OrderLinePayload {

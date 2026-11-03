@@ -601,6 +601,8 @@ public static class DbInitializer
                 CustomerId = order.CustomerId,
                 ProductId = detail.ProductId,
                 OrderId = order.Id,
+                TransactionType = ContainerTransactionType.Delivery,
+                QuantityChange = detail.Quantity - returned,
                 DeliveredQuantity = detail.Quantity,
                 ReturnedQuantity = returned,
                 BalanceBefore = balanceBefore,

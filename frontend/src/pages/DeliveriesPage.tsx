@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Image,
   List,
   Modal,
   Pagination,
@@ -17,6 +18,7 @@ import {
   Spin,
   Table,
   Typography,
+  Upload,
   message,
 } from 'antd'
 import {
@@ -27,10 +29,11 @@ import {
   PhoneOutlined,
   ReloadOutlined,
   StopOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import PageHeader from '../components/PageHeader'
 import { DeliveryStatusTag, PaymentStatusTag } from '../components/StatusTag'
-import { deliveryApi, getApiErrorMessage } from '../services/api'
+import { deliveryApi, getApiErrorMessage, toAssetUrl } from '../services/api'
 import type { Delivery, DeliveryStatus, OrderItem } from '../types'
 import {
   DELIVERY_STATUS_LABELS,
@@ -51,9 +54,11 @@ export default function DeliveriesPage() {
   const [actionDelivery, setActionDelivery] = useState<Delivery | null>(null)
   const [actionType, setActionType] = useState<'complete' | 'fail' | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [proofFile, setProofFile] = useState<File | null>(null)
   const [completeForm] = Form.useForm<{
     markAsPaid: boolean
     note?: string
+    recipientName: string
     containerReturns?: Record<string, number>
   }>()
   const [failForm] = Form.useForm<{ failureReason: string; note?: string }>()
@@ -126,12 +131,14 @@ export default function DeliveriesPage() {
       completeForm.resetFields()
       completeForm.setFieldsValue({
         markAsPaid: false,
+        recipientName: detail.recipientName ?? '',
         containerReturns: Object.fromEntries(
           (detail.order?.details ?? [])
             .filter((item) => item.requiresContainer)
             .map((item) => [String(item.id), 0]),
         ),
       })
+      setProofFile(null)
     } catch (error) {
       message.error(getApiErrorMessage(error, 'Không thể tải chi tiết giao hàng.'))
     } finally {
@@ -149,7 +156,14 @@ export default function DeliveriesPage() {
     if (!actionDelivery) return
     try {
       const values = await completeForm.validateFields()
+      if (!proofFile && !actionDelivery.proofImageUrl) {
+        message.error('Vui lòng chụp hoặc chọn ảnh làm bằng chứng giao hàng.')
+        return
+      }
       setActionLoading(true)
+      if (proofFile) {
+        await deliveryApi.uploadProof(actionDelivery.id, values.recipientName, proofFile)
+      }
       await deliveryApi.complete(
         actionDelivery.id,
         values.markAsPaid,
@@ -411,6 +425,16 @@ export default function DeliveriesPage() {
                   className="modal-alert"
                 />
               )}
+              {selected.proofImageUrl && (
+                <div className="delivery-proof">
+                  <Typography.Title level={5}>Bằng chứng giao hàng</Typography.Title>
+                  <Descriptions column={1} size="small">
+                    <Descriptions.Item label="Người nhận">{selected.recipientName || '—'}</Descriptions.Item>
+                    <Descriptions.Item label="Thời gian tải lên">{selected.proofUploadedAt ? formatDateTime(selected.proofUploadedAt) : '—'}</Descriptions.Item>
+                  </Descriptions>
+                  <Image width={240} src={toAssetUrl(selected.proofImageUrl)} alt="Bằng chứng giao hàng" />
+                </div>
+              )}
               <Typography.Title level={5} className="drawer-section-title">
                 Sản phẩm
               </Typography.Title>
@@ -472,6 +496,33 @@ export default function DeliveriesPage() {
           layout="vertical"
           initialValues={{ markAsPaid: false }}
         >
+          <Form.Item
+            name="recipientName"
+            label="Tên người nhận"
+            rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên người nhận.' }, { max: 200 }]}
+          >
+            <Input placeholder="VD: Nguyễn Văn An" />
+          </Form.Item>
+          <Form.Item label="Ảnh bằng chứng" required extra="JPEG, PNG hoặc WebP; tối đa 5 MB.">
+            <Upload
+              accept="image/jpeg,image/png,image/webp"
+              maxCount={1}
+              beforeUpload={(file) => {
+                if (file.size > 5 * 1024 * 1024) {
+                  message.error('Ảnh không được vượt quá 5 MB.')
+                  return Upload.LIST_IGNORE
+                }
+                setProofFile(file)
+                return false
+              }}
+              onRemove={() => { setProofFile(null) }}
+            >
+              <Button icon={<UploadOutlined />}>Chụp hoặc chọn ảnh</Button>
+            </Upload>
+            {actionDelivery?.proofImageUrl && !proofFile && (
+              <Typography.Text type="success"> Đang dùng ảnh đã tải lên.</Typography.Text>
+            )}
+          </Form.Item>
           {(actionDelivery?.order?.details ?? [])
             .filter((item) => item.requiresContainer)
             .map((item) => (

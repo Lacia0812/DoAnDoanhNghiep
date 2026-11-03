@@ -12,6 +12,7 @@ public sealed class EnumContractTests
     [InlineData(typeof(PaymentStatus), "Unpaid,Partial,Paid")]
     [InlineData(typeof(CustomerType), "Individual,Dealer,Company,School,Restaurant")]
     [InlineData(typeof(InventoryTransactionType), "StockIn,StockOut")]
+    [InlineData(typeof(ContainerTransactionType), "Delivery,Return,Adjustment")]
     public void Public_enum_names_are_stable(Type enumType, string expectedNames)
     {
         var expected = expectedNames.Split(',');

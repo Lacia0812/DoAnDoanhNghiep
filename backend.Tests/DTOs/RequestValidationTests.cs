@@ -63,6 +63,24 @@ public sealed class RequestValidationTests
         Assert.True(IsValid(new ChangePasswordRequest { NewPassword = "123456" }));
     }
 
+    [Fact]
+    public void Container_return_requires_positive_quantity()
+    {
+        Assert.False(IsValid(new ContainerReturnEntryRequest
+            { CustomerId = 1, ProductId = 1, Quantity = 0 }));
+        Assert.True(IsValid(new ContainerReturnEntryRequest
+            { CustomerId = 1, ProductId = 1, Quantity = 2 }));
+    }
+
+    [Fact]
+    public void Container_adjustment_requires_a_reason()
+    {
+        Assert.False(IsValid(new ContainerAdjustmentRequest
+            { CustomerId = 1, ProductId = 1, QuantityChange = -1, Reason = "" }));
+        Assert.True(IsValid(new ContainerAdjustmentRequest
+            { CustomerId = 1, ProductId = 1, QuantityChange = -1, Reason = "Kiểm kê" }));
+    }
+
     private static CreateOrderRequest ValidOrder() =>
         new()
         {

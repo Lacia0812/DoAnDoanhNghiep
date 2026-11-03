@@ -9,6 +9,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Image,
   Modal,
   Result,
   Row,
@@ -36,7 +37,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { OrderStatusTag, PaymentStatusTag } from '../components/StatusTag'
 import { useAuth } from '../contexts/AuthContext'
-import { getApiErrorMessage, orderApi, userApi } from '../services/api'
+import { getApiErrorMessage, orderApi, toAssetUrl, userApi } from '../services/api'
 import type { Order, OrderItem, OrderStatus, PaymentMethod, User } from '../types'
 import {
   ORDER_STATUS_LABELS,
@@ -560,6 +561,14 @@ export default function OrderDetailPage() {
                     message="Lý do giao thất bại"
                     description={order.delivery.failureReason}
                   />
+                )}
+                {order.delivery.proofImageUrl && (
+                  <div className="delivery-proof">
+                    <Divider />
+                    <Typography.Text strong>Bằng chứng giao hàng</Typography.Text>
+                    <div className="table-secondary">Người nhận: {order.delivery.recipientName || '—'}</div>
+                    <Image width="100%" src={toAssetUrl(order.delivery.proofImageUrl)} alt="Bằng chứng giao hàng" />
+                  </div>
                 )}
               </>
             ) : (

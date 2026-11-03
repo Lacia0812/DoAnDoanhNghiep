@@ -29,12 +29,13 @@ describe('phân quyền route và trang mặc định', () => {
   })
 
   it('mọi mục menu lấy trực tiếp từ cùng cấu hình route được bảo vệ', () => {
-    expect(MENU_ROUTES.length).toBe(8)
+    expect(MENU_ROUTES.length).toBe(10)
     expect(MENU_ROUTES.every((menuRoute) => APP_ROUTES.includes(menuRoute))).toBe(
       true,
     )
     expect(MENU_ROUTES.map((route) => route.path)).toEqual([
       '/dashboard',
+      '/reports',
       '/products',
       '/customers',
       '/orders',
@@ -42,7 +43,13 @@ describe('phân quyền route và trang mặc định', () => {
       '/finance',
       '/deliveries',
       '/users',
+      '/audit',
     ])
+  })
+
+  it('báo cáo và nhật ký chỉ dành cho Admin', () => {
+    expect(findRouteConfig('/reports')?.roles).toEqual(['Admin'])
+    expect(findRouteConfig('/audit')?.roles).toEqual(['Admin'])
   })
 
   it('route chi tiết và biểu mẫu có quyền riêng nhưng không tạo menu trùng', () => {

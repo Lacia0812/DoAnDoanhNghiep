@@ -51,6 +51,17 @@ public sealed class CurrentUserTests
         Assert.Equal(string.Empty, currentUser.Role);
     }
 
+    [Fact]
+    public void Reads_display_name_from_token()
+    {
+        var currentUser = CreateCurrentUser(
+            new Claim(ClaimTypes.NameIdentifier, "1"),
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim(ClaimTypes.GivenName, "Quản trị Gia Phú"));
+
+        Assert.Equal("Quản trị Gia Phú", currentUser.DisplayName);
+    }
+
     private static CurrentUser CreateCurrentUser(params Claim[] claims)
     {
         var context = new DefaultHttpContext

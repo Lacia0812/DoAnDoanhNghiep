@@ -105,11 +105,36 @@ public sealed class AppDbContextModelTests
     [InlineData(typeof(Order), nameof(Order.OrderStatus))]
     [InlineData(typeof(Delivery), nameof(Delivery.Status))]
     [InlineData(typeof(InventoryTransaction), nameof(InventoryTransaction.TransactionType))]
+    [InlineData(typeof(ContainerTransaction), nameof(ContainerTransaction.TransactionType))]
     public void Enums_are_stored_as_strings(Type entityType, string propertyName)
     {
         using var context = CreateContext();
         var property = context.Model.FindEntityType(entityType)!.FindProperty(propertyName);
 
         Assert.Equal(typeof(string), property!.GetProviderClrType());
+    }
+
+    [Fact]
+    public void Standalone_container_transactions_allow_a_missing_order()
+    {
+        using var context = CreateContext();
+        var entity = context.Model.FindEntityType(typeof(ContainerTransaction));
+        var orderId = entity!.FindProperty(nameof(ContainerTransaction.OrderId));
+        var index = Assert.Single(entity.GetIndexes(), candidate =>
+            candidate.Properties.Select(property => property.Name)
+                .SequenceEqual([nameof(ContainerTransaction.OrderId), nameof(ContainerTransaction.ProductId)]));
+
+        Assert.True(orderId!.IsNullable);
+        Assert.False(index.IsUnique);
+    }
+
+    [Fact]
+    public void Audit_user_is_preserved_as_snapshot_when_user_is_deleted()
+    {
+        using var context = CreateContext();
+        var entity = context.Model.FindEntityType(typeof(AuditLog));
+        var foreignKey = Assert.Single(entity!.GetForeignKeys());
+
+        Assert.Equal(DeleteBehavior.SetNull, foreignKey.DeleteBehavior);
     }
 }

@@ -8,7 +8,7 @@ vai trò và không phụ thuộc dịch vụ bên ngoài.
 ## Công nghệ
 
 - Backend: ASP.NET Core Web API 8, Entity Framework Core, SQL Server, JWT,
-  Swagger/OpenAPI và QuestPDF.
+  Swagger/OpenAPI, QuestPDF và ClosedXML.
 - Frontend: React, TypeScript, Vite, React Router, Axios, Ant Design,
   Ant Design Charts và Day.js.
 - Kiểm thử: xUnit cho backend; Vitest và React Testing Library cho frontend.
@@ -192,6 +192,8 @@ Delivery. Cả API và router frontend đều kiểm tra vai trò.
 - `/inventory`: tồn hiện tại, sản phẩm sắp hết, nhập kho và lịch sử thay đổi.
 - `/deliveries`: danh sách giao được phân công và các thao tác giao hàng.
 - `/finance`: tổng hợp công nợ, thu tiền từng phần và lịch sử giao/thu hồi vỏ.
+- `/reports`: xuất Excel doanh thu, công nợ, tồn kho và hiệu suất giao hàng.
+- `/audit`: tra cứu dữ liệu trước/sau của các thao tác vận hành quan trọng.
 - `/users`: quản lý, khóa/mở và đổi mật khẩu tài khoản.
 
 Tại chi tiết đơn hàng, Admin/Sales có thể tải hóa đơn PDF gồm tiền hàng, tiền
@@ -212,13 +214,17 @@ nguy hiểm, màu theo trạng thái và bố cục responsive cơ bản.
   `prepare`, `ready`, `cancel`, `assign-delivery`, `payments`; hóa đơn PDF tại
   `/api/orders/{id}/invoice`.
 - Giao hàng: `/api/deliveries/my-orders`, `/api/deliveries/{id}` và các action
-  `start`, `complete`, `fail`.
+  `start`, `complete`, `fail`, `proof` (multipart, ảnh tối đa 5 MB).
 - Kho: `/api/inventory`, `/api/inventory/transactions`.
 - Tài khoản: `/api/users`, `/api/users/{id}`, `/api/users/{id}/password`.
 - Dashboard: `/api/dashboard/summary`, `revenue`, `order-status`,
   `top-products`, `restock-suggestions`.
 - Công nợ: `/api/debts`, `/api/debts/summary`.
-- Vỏ bình: `/api/containers/transactions`.
+- Vỏ bình: `/api/containers/transactions`, `/api/containers/returns`,
+  `/api/containers/adjustments`.
+- Báo cáo Excel: `/api/reports/revenue`, `debts`, `inventory`,
+  `delivery-performance`.
+- Nhật ký: `/api/audit-logs` (Admin).
 
 API danh sách trả dữ liệu phân trang theo mẫu:
 
@@ -261,9 +267,9 @@ Kết quả kiểm tra tại thời điểm bàn giao:
 | Hạng mục | Kết quả |
 |---|---|
 | Backend build | Thành công, 0 lỗi và 0 cảnh báo |
-| Backend tests | 219/219 đạt |
+| Backend tests | 226/226 đạt |
 | EF migration model | Không có thay đổi chưa tạo migration |
-| Frontend tests | 18/18 đạt |
+| Frontend tests | 19/19 đạt |
 | Frontend production build | Thành công |
 | SQL Server seed | Thành công với đủ dữ liệu minh họa |
 
@@ -273,14 +279,27 @@ Kịch bản demo khuyến nghị:
    nhận đơn.
 2. Warehouse bắt đầu chuẩn bị rồi xác nhận sẵn sàng giao.
 3. Sales hoặc Admin phân công tài khoản Delivery.
-4. Delivery bắt đầu giao, nhập số vỏ khách trả rồi hoàn tất; hệ thống tính tiền
-   cọc cho số vỏ còn thiếu.
+4. Delivery bắt đầu giao, nhập người nhận, tải ảnh bằng chứng, nhập số vỏ khách
+   trả rồi hoàn tất; hệ thống tính tiền cọc cho số vỏ còn thiếu.
 5. Sales mở **Tài chính**, xem công nợ, thu một phần hoặc toàn bộ tiền còn lại.
 6. Sales/Admin mở chi tiết đơn và tải hóa đơn PDF.
 7. Admin mở dashboard để xem chỉ số và doanh thu cập nhật.
+8. Admin xuất các báo cáo Excel và mở Nhật ký hệ thống để xem thay đổi vừa tạo.
 
 Bộ seed có sẵn đơn `DEMO-REV-01` ở trạng thái thanh toán một phần, một giao dịch
 vỏ bình và tiền cọc để màn hình Tài chính có dữ liệu ngay khi demo.
+
+## Triển khai và sao lưu
+
+- Cấu hình production mẫu: `backend/appsettings.Production.json` và
+  `backend/.env.example`. JWT secret cùng connection string phải truyền bằng
+  biến môi trường, không commit vào Git.
+- Pipeline `.github/workflows/ci.yml` tự restore/build/test backend và
+  install/test/build frontend trên push hoặc pull request vào `main`.
+- Hướng dẫn publish IIS đầy đủ ở `docs/deployment-iis.md`.
+- Sao lưu SQL Server bằng
+  `scripts/backup-database.ps1`; script dùng `BACKUP ... WITH CHECKSUM` và chạy
+  `RESTORE VERIFYONLY` sau khi tạo file.
 
 ## Phạm vi không triển khai
 

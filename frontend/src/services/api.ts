@@ -26,6 +26,7 @@ import type {
   Role,
   TopProductPoint,
   User,
+  AuditLog,
 } from '../types'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(
@@ -34,6 +35,9 @@ const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').re
 )
 
 export const TOKEN_STORAGE_KEY = 'gia-phu-auth-token'
+export const API_ORIGIN = new URL(API_URL).origin
+export const toAssetUrl = (path?: string | null) =>
+  path ? (path.startsWith('http') ? path : `${API_ORIGIN}${path}`) : undefined
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -193,6 +197,14 @@ export const deliveryApi = {
     getData<Delivery>(
       api.post(`/deliveries/${id}/fail`, { failureReason, note }),
     ),
+  uploadProof: (id: number, recipientName: string, image: File) => {
+    const data = new FormData()
+    data.append('recipientName', recipientName)
+    data.append('image', image)
+    return getData<Delivery>(api.post(`/deliveries/${id}/proof`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }))
+  },
 }
 
 export const financeApi = {
@@ -203,6 +215,30 @@ export const financeApi = {
     getData<PagedResult<ContainerTransaction>>(
       api.get('/containers/transactions', { params }),
     ),
+  returnContainers: (payload: { customerId: number; productId: number; quantity: number; note?: string }) =>
+    getData<ContainerTransaction>(api.post('/containers/returns', payload)),
+  adjustContainers: (payload: { customerId: number; productId: number; quantityChange: number; reason: string }) =>
+    getData<ContainerTransaction>(api.post('/containers/adjustments', payload)),
+}
+
+const downloadReport = async (path: string, params?: Record<string, string>) => {
+  const response = await api.get<Blob>(path, { params, responseType: 'blob' })
+  const disposition = response.headers['content-disposition'] as string | undefined
+  const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+  const plain = disposition?.match(/filename="?([^";]+)"?/i)?.[1]
+  return { blob: response.data, fileName: encoded ? decodeURIComponent(encoded) : plain }
+}
+
+export const reportApi = {
+  revenue: (from: string, to: string) => downloadReport('/reports/revenue', { from, to }),
+  debts: () => downloadReport('/reports/debts'),
+  inventory: () => downloadReport('/reports/inventory'),
+  deliveryPerformance: (from: string, to: string) => downloadReport('/reports/delivery-performance', { from, to }),
+}
+
+export const auditApi = {
+  list: (params: ListParams & { action?: string; entityType?: string } = {}) =>
+    getData<PagedResult<AuditLog>>(api.get('/audit-logs', { params })),
 }
 
 export interface UserCreatePayload {

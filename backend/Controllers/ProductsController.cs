@@ -177,6 +177,10 @@ public sealed class ProductsController(AppDbContext db, ICurrentUser currentUser
             CreatedAt = DateTime.UtcNow,
             Note = string.IsNullOrWhiteSpace(request.Note) ? "Nhập thêm kho" : request.Note.Trim()
         });
+        AuditTrail.Add(db, currentUser, "StockAdded", "Product", id,
+            new { stockQuantity = before },
+            new { stockQuantity = product.StockQuantity, request.Quantity, request.Note },
+            HttpContext.Connection.RemoteIpAddress?.ToString());
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await Get(id, cancellationToken);

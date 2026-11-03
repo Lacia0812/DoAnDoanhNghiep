@@ -69,6 +69,8 @@ public sealed class DeliveryService(AppDbContext db, ICurrentUser currentUser)
         delivery.Status = DeliveryStatus.Delivering;
         delivery.StartedAt = DateTime.UtcNow;
         delivery.Order.OrderStatus = OrderStatus.Delivering;
+        AuditTrail.Add(db, currentUser, "DeliveryStarted", "Delivery", id,
+            new { status = DeliveryStatus.Assigned }, new { status = DeliveryStatus.Delivering });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await GetTrackedResultAsync(id, cancellationToken);
@@ -118,6 +120,8 @@ public sealed class DeliveryService(AppDbContext db, ICurrentUser currentUser)
                 CustomerId = customer.Id,
                 ProductId = detail.ProductId,
                 OrderId = delivery.OrderId,
+                TransactionType = ContainerTransactionType.Delivery,
+                QuantityChange = detail.Quantity - returned,
                 DeliveredQuantity = detail.Quantity,
                 ReturnedQuantity = returned,
                 BalanceBefore = before,
@@ -155,6 +159,9 @@ public sealed class DeliveryService(AppDbContext db, ICurrentUser currentUser)
         }
         delivery.Order.PaymentStatus = OrderService.GetPaymentStatus(
             delivery.Order.PaidAmount, delivery.Order.TotalAmount);
+        AuditTrail.Add(db, currentUser, "DeliveryCompleted", "Delivery", id,
+            new { status = DeliveryStatus.Delivering },
+            new { status = DeliveryStatus.Completed, request.MarkAsPaid, depositAmount });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await GetTrackedResultAsync(id, cancellationToken);
@@ -198,8 +205,30 @@ public sealed class DeliveryService(AppDbContext db, ICurrentUser currentUser)
         delivery.FailureReason = request.FailureReason.Trim();
         delivery.Note = Clean(request.Note);
         delivery.Order.OrderStatus = OrderStatus.DeliveryFailed;
+        AuditTrail.Add(db, currentUser, "DeliveryFailed", "Delivery", id,
+            new { status = DeliveryStatus.Delivering },
+            new { status = DeliveryStatus.Failed, delivery.FailureReason });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        return await GetTrackedResultAsync(id, cancellationToken);
+    }
+
+    public async Task<DeliveryDto> SaveProofAsync(
+        int id, string recipientName, string proofImagePath, CancellationToken cancellationToken)
+    {
+        var delivery = await FullQuery(true).SingleOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw NotFound();
+        EnsureOwner(delivery);
+        if (delivery.Status is not (DeliveryStatus.Delivering or DeliveryStatus.Completed))
+            throw InvalidStatus("Chỉ đơn đang giao hoặc đã giao mới có thể lưu bằng chứng.");
+
+        var oldProof = new { delivery.RecipientName, delivery.ProofImagePath };
+        delivery.RecipientName = recipientName.Trim();
+        delivery.ProofImagePath = proofImagePath;
+        delivery.ProofUploadedAt = DateTime.UtcNow;
+        AuditTrail.Add(db, currentUser, "DeliveryProofUploaded", "Delivery", id,
+            oldProof, new { delivery.RecipientName, delivery.ProofImagePath, delivery.ProofUploadedAt });
+        await db.SaveChangesAsync(cancellationToken);
         return await GetTrackedResultAsync(id, cancellationToken);
     }
 

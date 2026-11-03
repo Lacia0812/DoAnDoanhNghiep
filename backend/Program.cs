@@ -39,8 +39,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key chưa được cấu hình.");
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32
+    || (!builder.Environment.IsDevelopment() && jwtKey.StartsWith("__", StringComparison.Ordinal)))
+    throw new InvalidOperationException("Jwt:Key phải được cấu hình bằng bí mật tối thiểu 32 ký tự.");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -115,10 +117,12 @@ builder.Services.AddScoped<DeliveryService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<InvoiceService>();
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
@@ -174,6 +178,7 @@ app.UseStatusCodePages(async statusContext =>
         Instance = statusContext.HttpContext.Request.Path
     });
 });
+app.UseStaticFiles();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();

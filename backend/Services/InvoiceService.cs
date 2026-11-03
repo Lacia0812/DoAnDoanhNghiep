@@ -17,6 +17,7 @@ public sealed class InvoiceService(AppDbContext db)
             .Include(x => x.Customer)
             .Include(x => x.Details).ThenInclude(x => x.Product)
             .Include(x => x.Payments)
+            .Include(x => x.Delivery)
             .SingleOrDefaultAsync(x => x.Id == orderId, cancellationToken)
             ?? throw new BusinessException(StatusCodes.Status404NotFound,
                 "Không tìm thấy đơn hàng.", "order_not_found");
@@ -41,6 +42,8 @@ public sealed class InvoiceService(AppDbContext db)
                     column.Item().Text($"Khách hàng: {order.Customer.CustomerName}").Bold();
                     column.Item().Text($"Điện thoại: {order.Customer.Phone}");
                     column.Item().Text($"Địa chỉ giao: {order.DeliveryAddress}");
+                    if (!string.IsNullOrWhiteSpace(order.Delivery?.RecipientName))
+                        column.Item().Text($"Người nhận: {order.Delivery.RecipientName}");
                     column.Item().Text($"Ngày đặt: {VietnamTime.FromUtc(order.OrderDate):dd/MM/yyyy HH:mm}");
 
                     column.Item().Table(table =>

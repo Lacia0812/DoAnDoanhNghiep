@@ -60,7 +60,10 @@ public sealed record DeliverySummaryDto(
     DateTime? CompletedAt,
     DeliveryStatus Status,
     string? FailureReason,
-    string? Note);
+    string? Note,
+    string? RecipientName,
+    string? ProofImageUrl,
+    DateTime? ProofUploadedAt);
 
 public sealed record OrderDto(
     int Id,

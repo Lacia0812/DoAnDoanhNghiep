@@ -13,19 +13,23 @@ import {
   Statistic,
   Table,
   Tabs,
+  Tag,
   Typography,
   message,
   type TableColumnsType,
 } from 'antd'
-import { DollarOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { DollarOutlined, MinusCircleOutlined, PlusCircleOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import PageHeader from '../components/PageHeader'
 import { PaymentStatusTag } from '../components/StatusTag'
-import { financeApi, getApiErrorMessage, orderApi } from '../services/api'
+import { customerApi, financeApi, getApiErrorMessage, orderApi, productApi } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import type {
   ContainerTransaction,
   Debt,
   DebtSummary,
   PaymentMethod,
+  Customer,
+  Product,
 } from '../types'
 import { PAGE_SIZE_OPTIONS, PAYMENT_METHOD_LABELS } from '../utils/constants'
 import { formatCurrency, formatDateTime } from '../utils/format'
@@ -36,8 +40,17 @@ interface PaymentFormValues {
   note?: string
 }
 
+interface ContainerFormValues {
+  customerId: number
+  productId: number
+  quantity: number
+  note: string
+}
+
 export default function FinancePage() {
   const [form] = Form.useForm<PaymentFormValues>()
+  const [containerForm] = Form.useForm<ContainerFormValues>()
+  const { user } = useAuth()
   const [debts, setDebts] = useState<Debt[]>([])
   const [transactions, setTransactions] = useState<ContainerTransaction[]>([])
   const [summary, setSummary] = useState<DebtSummary>()
@@ -51,6 +64,9 @@ export default function FinancePage() {
   const [total, setTotal] = useState(0)
   const [containerPage, setContainerPage] = useState(1)
   const [containerTotal, setContainerTotal] = useState(0)
+  const [containerAction, setContainerAction] = useState<'return' | 'adjust'>()
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [products, setProducts] = useState<Product[]>([])
 
   const loadDebts = useCallback(async () => {
     setLoading(true)
@@ -120,6 +136,39 @@ export default function FinancePage() {
     }
   }
 
+  const openContainerAction = async (action: 'return' | 'adjust') => {
+    try {
+      setSaving(true)
+      const [customerResult, productResult] = await Promise.all([customerApi.active(), productApi.active()])
+      setCustomers(customerResult.items)
+      setProducts(productResult.items.filter((item) => item.requiresContainer))
+      containerForm.resetFields()
+      setContainerAction(action)
+    } catch (error) {
+      message.error(getApiErrorMessage(error, 'Không thể tải dữ liệu vỏ bình.'))
+    } finally { setSaving(false) }
+  }
+
+  const submitContainerAction = async () => {
+    if (!containerAction) return
+    try {
+      const values = await containerForm.validateFields()
+      setSaving(true)
+      if (containerAction === 'return') {
+        await financeApi.returnContainers({ customerId: values.customerId, productId: values.productId, quantity: values.quantity, note: values.note?.trim() })
+        message.success('Đã ghi nhận khách trả vỏ.')
+      } else {
+        await financeApi.adjustContainers({ customerId: values.customerId, productId: values.productId, quantityChange: values.quantity, reason: values.note.trim() })
+        message.success('Đã điều chỉnh số dư vỏ.')
+      }
+      setContainerAction(undefined)
+      await loadContainers()
+    } catch (error) {
+      if ((error as { errorFields?: unknown }).errorFields) return
+      message.error(getApiErrorMessage(error, 'Không thể cập nhật vỏ bình.'))
+    } finally { setSaving(false) }
+  }
+
   const debtColumns: TableColumnsType<Debt> = [
     {
       title: 'Đơn hàng',
@@ -162,11 +211,12 @@ export default function FinancePage() {
 
   const containerColumns: TableColumnsType<ContainerTransaction> = [
     { title: 'Thời gian', dataIndex: 'createdAt', width: 170, render: formatDateTime },
-    { title: 'Đơn hàng', dataIndex: 'orderCode', width: 150 },
+    { title: 'Loại', dataIndex: 'transactionType', width: 125, render: (value) => <Tag color={value === 'Delivery' ? 'blue' : value === 'Return' ? 'green' : 'orange'}>{value === 'Delivery' ? 'Theo đơn' : value === 'Return' ? 'Trả vỏ' : 'Điều chỉnh'}</Tag> },
+    { title: 'Đơn hàng', dataIndex: 'orderCode', width: 150, render: (value) => value || 'Ngoài đơn' },
     { title: 'Khách hàng', dataIndex: 'customerName', width: 230 },
     { title: 'Sản phẩm', dataIndex: 'productName', width: 220 },
     { title: 'Vỏ giao', dataIndex: 'deliveredQuantity', align: 'right', width: 90 },
-    { title: 'Vỏ thu', dataIndex: 'returnedQuantity', align: 'right', width: 90 },
+    { title: 'Thay đổi', dataIndex: 'quantityChange', align: 'right', width: 100, render: (value) => <Typography.Text type={value < 0 ? 'success' : undefined} strong>{value > 0 ? `+${value}` : value}</Typography.Text> },
     { title: 'Nợ trước', dataIndex: 'balanceBefore', align: 'right', width: 90 },
     {
       title: 'Nợ sau',
@@ -183,6 +233,10 @@ export default function FinancePage() {
       <PageHeader
         title="Công nợ và vỏ bình"
         subtitle="Theo dõi khoản phải thu, lịch sử thanh toán và số vỏ khách đang giữ."
+        actions={<Space wrap>
+          <Button icon={<MinusCircleOutlined />} onClick={() => openContainerAction('return')}>Khách trả vỏ</Button>
+          {user?.role === 'Admin' && <Button icon={<PlusCircleOutlined />} onClick={() => openContainerAction('adjust')}>Điều chỉnh vỏ</Button>}
+        </Space>}
       />
       <Row gutter={[16, 16]} className="summary-grid">
         <Col xs={24} md={8}><Card><Statistic title="Tổng công nợ" value={summary?.totalDebt ?? 0} formatter={(value) => formatCurrency(Number(value))} /></Card></Col>
@@ -269,6 +323,35 @@ export default function FinancePage() {
             <Select options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))} />
           </Form.Item>
           <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea rows={3} maxLength={500} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title={containerAction === 'return' ? 'Ghi nhận khách trả vỏ' : 'Điều chỉnh số dư vỏ'}
+        open={Boolean(containerAction)}
+        onCancel={() => setContainerAction(undefined)}
+        onOk={submitContainerAction}
+        okText="Lưu phiếu"
+        cancelText="Hủy"
+        confirmLoading={saving}
+        destroyOnHidden
+      >
+        <Form form={containerForm} layout="vertical">
+          <Form.Item name="customerId" label="Khách hàng" rules={[{ required: true, message: 'Vui lòng chọn khách hàng.' }]}>
+            <Select showSearch optionFilterProp="label" options={customers.map((item) => ({ value: item.id, label: `${item.customerCode} · ${item.customerName} · đang giữ ${item.containerBalance} vỏ` }))} />
+          </Form.Item>
+          <Form.Item name="productId" label="Loại vỏ / sản phẩm" rules={[{ required: true, message: 'Vui lòng chọn sản phẩm.' }]}>
+            <Select showSearch optionFilterProp="label" options={products.map((item) => ({ value: item.id, label: `${item.productCode} · ${item.productName}` }))} />
+          </Form.Item>
+          <Form.Item
+            name="quantity"
+            label={containerAction === 'return' ? 'Số vỏ trả' : 'Mức điều chỉnh (+ tăng nợ, - giảm nợ)'}
+            rules={[{ required: true, message: 'Vui lòng nhập số lượng.' }, ...(containerAction === 'adjust' ? [{ validator: (_: unknown, value: number) => value === 0 ? Promise.reject(new Error('Mức điều chỉnh phải khác 0.')) : Promise.resolve() }] : [])]}
+          >
+            <InputNumber precision={0} min={containerAction === 'return' ? 1 : -1000000} max={1000000} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="note" label={containerAction === 'adjust' ? 'Lý do điều chỉnh' : 'Ghi chú'} rules={containerAction === 'adjust' ? [{ required: true, min: 3, message: 'Vui lòng nhập lý do tối thiểu 3 ký tự.' }] : undefined}>
             <Input.TextArea rows={3} maxLength={500} showCount />
           </Form.Item>
         </Form>

@@ -136,6 +136,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
         order.PaidAmount = 0;
         order.TotalAmount = order.ProductAmount;
         db.Orders.Add(order);
+        AuditTrail.Add(db, currentUser, "OrderCreated", "Order", order.OrderCode,
+            null, new { order.CustomerId, order.TotalAmount, itemCount = order.Details.Count });
         await db.SaveChangesAsync(cancellationToken);
         return await GetWithoutPermissionAsync(order.Id, cancellationToken);
     }
@@ -149,6 +151,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
         var order = await db.Orders.Include(x => x.Details)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken) ?? throw NotFound();
         EnsureStatus(order, OrderStatus.New);
+        var oldValues = new { order.CustomerId, order.DeliveryAddress, order.TotalAmount,
+            items = order.Details.Select(x => new { x.ProductId, x.Quantity }).ToArray() };
         var orderDateUtc = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
         var localOrderDate = TimeZoneInfo.ConvertTimeFromUtc(orderDateUtc, VietnamTime.Zone).Date;
         ValidateExpectedDeliveryDate(request.ExpectedDeliveryDate, localOrderDate);
@@ -184,6 +188,9 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
         order.ProductAmount = order.Details.Sum(x => x.TotalPrice);
         order.DepositAmount = 0;
         order.TotalAmount = order.ProductAmount;
+        AuditTrail.Add(db, currentUser, "OrderUpdated", "Order", id, oldValues,
+            new { order.CustomerId, order.DeliveryAddress, order.TotalAmount,
+                items = order.Details.Select(x => new { x.ProductId, x.Quantity }).ToArray() });
         await db.SaveChangesAsync(cancellationToken);
         return await GetWithoutPermissionAsync(order.Id, cancellationToken);
     }
@@ -199,6 +206,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
                 throw InsufficientStock(detail.Product.ProductName);
         }
         order.OrderStatus = OrderStatus.Confirmed;
+        AuditTrail.Add(db, currentUser, "OrderConfirmed", "Order", id,
+            new { status = OrderStatus.New }, new { status = OrderStatus.Confirmed });
         await db.SaveChangesAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);
     }
@@ -234,6 +243,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
             });
         }
         order.OrderStatus = OrderStatus.Preparing;
+        AuditTrail.Add(db, currentUser, "InventoryPrepared", "Order", id,
+            new { status = OrderStatus.Confirmed }, new { status = OrderStatus.Preparing });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);
@@ -245,6 +256,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
             ?? throw NotFound();
         OrderStateMachine.Ensure(order.OrderStatus, OrderStatus.ReadyForDelivery);
         order.OrderStatus = OrderStatus.ReadyForDelivery;
+        AuditTrail.Add(db, currentUser, "OrderReady", "Order", id,
+            new { status = OrderStatus.Preparing }, new { status = OrderStatus.ReadyForDelivery });
         await db.SaveChangesAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);
     }
@@ -255,6 +268,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
             ?? throw NotFound();
         OrderStateMachine.Ensure(order.OrderStatus, OrderStatus.Cancelled);
         order.OrderStatus = OrderStatus.Cancelled;
+        AuditTrail.Add(db, currentUser, "OrderCancelled", "Order", id,
+            new { status = OrderStatus.New }, new { status = OrderStatus.Cancelled });
         await db.SaveChangesAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);
     }
@@ -266,6 +281,7 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
             IsolationLevel.Serializable, cancellationToken);
         var order = await db.Orders.Include(x => x.Delivery)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken) ?? throw NotFound();
+        var previousDeliveryUserId = order.DeliveryUserId;
         if (order.OrderStatus != OrderStatus.ReadyForDelivery)
             throw InvalidStatus("Chỉ được phân công khi đơn đã sẵn sàng giao.");
 
@@ -292,6 +308,8 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
             order.Delivery.AssignedAt = DateTime.UtcNow;
         }
         order.DeliveryUserId = user.Id;
+        AuditTrail.Add(db, currentUser, "DeliveryAssigned", "Order", id,
+            new { deliveryUserId = previousDeliveryUserId }, new { deliveryUserId = user.Id });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);
@@ -325,6 +343,9 @@ public sealed class OrderService(AppDbContext db, ICurrentUser currentUser)
         });
         order.PaidAmount += request.Amount;
         order.PaymentStatus = GetPaymentStatus(order.PaidAmount, order.TotalAmount);
+        AuditTrail.Add(db, currentUser, "PaymentRecorded", "Order", id,
+            new { paidAmount = order.PaidAmount - request.Amount },
+            new { order.PaidAmount, order.PaymentStatus, request.Amount, paymentMethod });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return await GetWithoutPermissionAsync(id, cancellationToken);

@@ -53,7 +53,10 @@ public static class MappingExtensions
                 value.Delivery.CompletedAt,
                 value.Delivery.Status,
                 value.Delivery.FailureReason,
-                value.Delivery.Note);
+                value.Delivery.Note,
+                value.Delivery.RecipientName,
+                value.Delivery.ProofImagePath,
+                value.Delivery.ProofUploadedAt);
 
         return new OrderDto(
             value.Id, value.OrderCode, value.CustomerId, value.Customer.CustomerName,
@@ -73,5 +76,6 @@ public static class MappingExtensions
             value.Order.DeliveryAddress, value.Order.TotalAmount, value.DeliveryUserId,
             value.DeliveryUser.FullName, value.AssignedAt, value.StartedAt, value.CompletedAt,
             value.Status, value.FailureReason, value.Note,
+            value.RecipientName, value.ProofImagePath, value.ProofUploadedAt,
             includeOrder ? value.Order.ToDto() : null);
 }

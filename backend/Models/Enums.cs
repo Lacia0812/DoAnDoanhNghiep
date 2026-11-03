@@ -57,3 +57,10 @@ public enum InventoryTransactionType
     StockIn,
     StockOut
 }
+
+public enum ContainerTransactionType
+{
+    Delivery,
+    Return,
+    Adjustment
+}

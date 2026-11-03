@@ -22,6 +22,60 @@ namespace GiaPhuWaterDelivery.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("GiaPhuWaterDelivery.Api.Models.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("GiaPhuWaterDelivery.Api.Models.ContainerTransaction", b =>
                 {
                     b.Property<int>("Id")
@@ -52,14 +106,22 @@ namespace GiaPhuWaterDelivery.Api.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("OrderId")
+                    b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
+                    b.Property<int>("QuantityChange")
+                        .HasColumnType("int");
+
                     b.Property<int>("ReturnedQuantity")
                         .HasColumnType("int");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -69,8 +131,7 @@ namespace GiaPhuWaterDelivery.Api.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("OrderId", "ProductId")
-                        .IsUnique();
+                    b.HasIndex("OrderId", "ProductId");
 
                     b.ToTable("ContainerTransactions", null, t =>
                         {
@@ -167,6 +228,17 @@ namespace GiaPhuWaterDelivery.Api.Migrations
 
                     b.Property<int>("OrderId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ProofImagePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ProofUploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime?>("StartedAt")
                         .HasColumnType("datetime2");
@@ -561,6 +633,16 @@ namespace GiaPhuWaterDelivery.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GiaPhuWaterDelivery.Api.Models.AuditLog", b =>
+                {
+                    b.HasOne("GiaPhuWaterDelivery.Api.Models.User", "User")
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GiaPhuWaterDelivery.Api.Models.ContainerTransaction", b =>
                 {
                     b.HasOne("GiaPhuWaterDelivery.Api.Models.User", "CreatedByUser")
@@ -578,8 +660,7 @@ namespace GiaPhuWaterDelivery.Api.Migrations
                     b.HasOne("GiaPhuWaterDelivery.Api.Models.Order", "Order")
                         .WithMany("ContainerTransactions")
                         .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GiaPhuWaterDelivery.Api.Models.Product", "Product")
                         .WithMany("ContainerTransactions")
@@ -753,6 +834,8 @@ namespace GiaPhuWaterDelivery.Api.Migrations
             modelBuilder.Entity("GiaPhuWaterDelivery.Api.Models.User", b =>
                 {
                     b.Navigation("AssignedOrders");
+
+                    b.Navigation("AuditLogs");
 
                     b.Navigation("ContainerTransactions");
 
