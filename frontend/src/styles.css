@@ -1360,3 +1360,316 @@ select {
     transform: none;
   }
 }
+
+/* Astryx login pilot: scoped so the existing Ant Design application is unchanged. */
+.gp-login-page {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--color-text-primary);
+  background: var(--color-background-body);
+}
+
+.gp-login-grid {
+  grid-template-columns: minmax(0, 1.12fr) minmax(28rem, 0.88fr) !important;
+}
+
+.gp-login-story {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--color-text-primary-inverted, white);
+  background: var(--color-background-inverted);
+  isolation: isolate;
+}
+
+.gp-login-story::before,
+.gp-login-story::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.gp-login-story::before {
+  z-index: -2;
+  inset: -3%;
+  background-image: url('/images/login-water-delivery-hero.png');
+  background-position: 70% center;
+  background-size: cover;
+  animation: gp-login-scene 18s ease-in-out infinite alternate;
+}
+
+.gp-login-story::after {
+  z-index: -1;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-background-inverted) 94%, transparent),
+      color-mix(in srgb, var(--color-background-inverted) 70%, transparent) 55%,
+      color-mix(in srgb, var(--color-background-inverted) 38%, transparent)
+    ),
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--color-background-inverted) 78%, transparent),
+      transparent 58%
+    );
+}
+
+.gp-login-brand {
+  animation: gp-login-rise 600ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gp-login-logo {
+  display: inline-flex;
+  width: var(--spacing-10);
+  height: var(--spacing-10);
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-accent);
+  background: var(--color-background-surface);
+  border-radius: var(--radius-container);
+  box-shadow: var(--shadow-med);
+}
+
+.gp-login-logo svg {
+  width: var(--spacing-6);
+  height: var(--spacing-6);
+}
+
+.gp-login-brand [data-type='supporting'] {
+  opacity: 0.7;
+  letter-spacing: 0.16em;
+}
+
+.gp-login-story-content {
+  margin-block: auto;
+  animation: gp-login-rise 720ms 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gp-login-status {
+  width: fit-content;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: color-mix(in srgb, var(--color-background-surface) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 28%, transparent);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(0.75rem);
+}
+
+.gp-login-story-title {
+  max-width: 12ch;
+  color: inherit !important;
+  text-wrap: balance;
+}
+
+.gp-login-story-description {
+  max-width: 38rem;
+  opacity: 0.78;
+}
+
+.gp-login-highlight {
+  min-width: 0;
+  padding: var(--spacing-3);
+  background: color-mix(in srgb, var(--color-background-surface) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-border) 20%, transparent);
+  border-radius: var(--radius-container);
+  backdrop-filter: blur(0.5rem);
+  animation: gp-login-highlight 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gp-login-highlight:nth-child(1) {
+  animation-delay: 480ms;
+}
+
+.gp-login-highlight:nth-child(2) {
+  animation-delay: 580ms;
+}
+
+.gp-login-highlight:nth-child(3) {
+  animation-delay: 680ms;
+}
+
+.gp-login-highlight [data-type='supporting'] {
+  opacity: 0.66;
+}
+
+.gp-login-story-footer {
+  opacity: 0.62;
+  animation: gp-login-rise 600ms 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gp-login-auth {
+  display: flex;
+  min-width: 0;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8);
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, var(--color-background-cyan) 48%, transparent),
+      transparent 34%
+    ),
+    var(--color-background-body);
+}
+
+.gp-login-auth-content {
+  min-width: 0;
+  max-width: 100% !important;
+  animation: gp-login-auth-enter 680ms 80ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gp-login-kicker {
+  letter-spacing: 0.14em;
+}
+
+.gp-login-auth form {
+  width: 100%;
+}
+
+.gp-login-auth .astryx-button[data-variant='primary'] {
+  min-height: var(--spacing-10);
+}
+
+.gp-login-demo {
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.gp-login-auth-footer {
+  padding-top: var(--spacing-2);
+}
+
+@keyframes gp-login-scene {
+  from {
+    transform: scale(1.02) translate3d(-0.5%, 0, 0);
+  }
+
+  to {
+    transform: scale(1.08) translate3d(1.5%, -0.8%, 0);
+  }
+}
+
+@keyframes gp-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gp-login-highlight {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gp-login-auth-enter {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 62rem) {
+  .gp-login-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .gp-login-story {
+    min-height: 24rem;
+  }
+
+  .gp-login-story-stack {
+    min-height: 24rem;
+    padding: var(--spacing-6);
+  }
+
+  .gp-login-story-content {
+    gap: var(--spacing-3) !important;
+  }
+
+  .gp-login-story-title {
+    max-width: 18ch;
+  }
+
+  .gp-login-highlights,
+  .gp-login-story-footer {
+    display: none !important;
+  }
+
+  .gp-login-auth {
+    min-height: auto;
+    padding-block: var(--spacing-10);
+  }
+}
+
+@media (max-width: 36rem) {
+  .gp-login-story {
+    min-height: 18rem;
+  }
+
+  .gp-login-story-stack {
+    min-height: 18rem;
+    padding: var(--spacing-5);
+  }
+
+  .gp-login-story-description,
+  .gp-login-status {
+    display: none !important;
+  }
+
+  .gp-login-auth {
+    padding: var(--spacing-5);
+  }
+
+  .gp-login-story-title {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: clamp(2.15rem, 10vw, 3rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .gp-login-options,
+  .gp-login-demo-heading {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .gp-login-demo-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .gp-login-auth form,
+  .gp-login-auth form > *,
+  .gp-login-auth input {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-login-story::before,
+  .gp-login-brand,
+  .gp-login-story-content,
+  .gp-login-highlight,
+  .gp-login-story-footer,
+  .gp-login-auth-content {
+    animation: none !important;
+  }
+}

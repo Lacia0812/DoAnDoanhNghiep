@@ -1,30 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Banner } from '@astryxdesign/core/Banner'
+import { Button } from '@astryxdesign/core/Button'
+import { CheckboxInput } from '@astryxdesign/core/CheckboxInput'
+import { Grid } from '@astryxdesign/core/Grid'
+import { Heading } from '@astryxdesign/core/Heading'
+import { HStack } from '@astryxdesign/core/HStack'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Text } from '@astryxdesign/core/Text'
+import { TextInput } from '@astryxdesign/core/TextInput'
+import { Theme } from '@astryxdesign/core/theme'
+import { VStack } from '@astryxdesign/core/VStack'
 import {
-  Button,
-  Checkbox,
-  Form,
-  Input,
-  Typography,
-  message,
-} from 'antd'
-import {
-  ArrowRightOutlined,
-  CarOutlined,
-  CheckCircleFilled,
-  DatabaseOutlined,
-  LockOutlined,
-  ShoppingCartOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
+  ArrowRightIcon,
+  CheckCircleIcon,
+  CircleStackIcon,
+  CubeIcon,
+  LockClosedIcon,
+  ShoppingBagIcon,
+  TruckIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { defaultThemeSlug, themes } from '../astryx-themes'
 import { useAuth } from '../contexts/AuthContext'
 import { getApiErrorMessage } from '../services/api'
-import type { LoginRequest } from '../types'
 import { ROLE_HOME } from '../utils/constants'
-
-interface LoginFormValues extends LoginRequest {
-  remember: boolean
-}
 
 const demoAccounts = [
   { label: 'Quản trị', username: 'admin', password: 'Admin@123' },
@@ -33,38 +33,74 @@ const demoAccounts = [
   { label: 'Giao hàng', username: 'delivery', password: 'Delivery@123' },
 ]
 
+const operatingHighlights = [
+  {
+    icon: ShoppingBagIcon,
+    title: 'Đơn hàng',
+    description: 'Theo dõi xuyên suốt',
+  },
+  {
+    icon: CircleStackIcon,
+    title: 'Tồn kho',
+    description: 'Số liệu tức thời',
+  },
+  {
+    icon: TruckIcon,
+    title: 'Giao nhận',
+    description: 'Đúng người, đúng đơn',
+  },
+]
+
 export default function LoginPage() {
   const { login, isAuthenticated, user, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [remember, setRemember] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [form] = Form.useForm<LoginFormValues>()
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const remembered = localStorage.getItem('gia-phu-remembered-username')
-    if (remembered) form.setFieldsValue({ username: remembered, remember: true })
-  }, [form])
+    if (remembered) {
+      setUsername(remembered)
+      setRemember(true)
+    }
+  }, [])
 
   if (!loading && isAuthenticated && user) {
     return <Navigate to={ROLE_HOME[user.role]} replace />
   }
 
-  const submit = async (values: LoginFormValues) => {
+  const submit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault()
+    setHasSubmitted(true)
+    setErrorMessage(null)
+
+    const normalizedUsername = username.trim()
+    if (!normalizedUsername || !password) return
+
     setSubmitting(true)
     try {
-      const loggedInUser = await login(values)
-      if (values.remember) {
-        localStorage.setItem('gia-phu-remembered-username', values.username)
+      const loggedInUser = await login({
+        username: normalizedUsername,
+        password,
+      })
+
+      if (remember) {
+        localStorage.setItem('gia-phu-remembered-username', normalizedUsername)
       } else {
         localStorage.removeItem('gia-phu-remembered-username')
       }
-      message.success(`Xin chào, ${loggedInUser.fullName}!`)
+
       const requestedPath = (
         location.state as { from?: { pathname?: string } } | null
       )?.from?.pathname
       navigate(requestedPath || ROLE_HOME[loggedInUser.role], { replace: true })
     } catch (error) {
-      message.error(
+      setErrorMessage(
         getApiErrorMessage(
           error,
           'Tên đăng nhập hoặc mật khẩu không chính xác.',
@@ -75,168 +111,277 @@ export default function LoginPage() {
     }
   }
 
-  const selectDemoAccount = (username: string, password: string) => {
-    form.setFieldsValue({ username, password })
+  const selectDemoAccount = (account: (typeof demoAccounts)[number]) => {
+    setUsername(account.username)
+    setPassword(account.password)
+    setErrorMessage(null)
+    setHasSubmitted(false)
   }
 
   return (
-    <main className="login-page">
-      <section className="login-showcase" aria-label="Giới thiệu hệ thống">
-        <div className="login-showcase-grid" />
-        <div className="login-orb login-orb-one" />
-        <div className="login-orb login-orb-two" />
-        <header className="login-brand-header">
-          <div className="login-logo-mark" aria-hidden="true">
-            <span>GP</span>
-          </div>
-          <div>
-            <strong>GIA PHÚ</strong>
-            <small>WATER DELIVERY</small>
-          </div>
-        </header>
-
-        <div className="login-showcase-content">
-          <div className="login-eyebrow">
-            <CheckCircleFilled /> Hệ thống đang hoạt động
-          </div>
-          <Typography.Title>
-            Quản lý giao nước.
-            <br />
-            <span>Gọn từng đơn.</span>
-          </Typography.Title>
-          <Typography.Paragraph>
-            Một nơi để đội ngũ Gia Phú theo dõi bán hàng, kho, giao nhận và
-            công nợ xuyên suốt.
-          </Typography.Paragraph>
-
-          <div className="login-benefits">
-            <div>
-              <ShoppingCartOutlined />
-              <span>
-                <strong>Đơn hàng</strong>
-                <small>Rõ trạng thái</small>
-              </span>
-            </div>
-            <div>
-              <DatabaseOutlined />
-              <span>
-                <strong>Tồn kho</strong>
-                <small>Cập nhật tức thời</small>
-              </span>
-            </div>
-            <div>
-              <CarOutlined />
-              <span>
-                <strong>Giao nhận</strong>
-                <small>Đúng người, đúng đơn</small>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <footer className="login-showcase-footer">
-          <span>Quản lý tập trung</span>
-          <i />
-          <span>Vận hành minh bạch</span>
-        </footer>
-      </section>
-
-      <section className="login-panel">
-        <div className="login-form-wrap">
-          <div className="login-mobile-brand" aria-label="Gia Phú Water Delivery">
-            <span className="login-logo-mark">GP</span>
-            <span>
-              <strong>GIA PHÚ</strong>
-              <small>WATER DELIVERY</small>
-            </span>
-          </div>
-
-          <header className="login-form-header">
-            <span className="login-form-kicker">CỔNG NHÂN VIÊN</span>
-            <Typography.Title level={1}>Chào mừng trở lại</Typography.Title>
-            <Typography.Paragraph>
-              Đăng nhập để tiếp tục công việc của bạn hôm nay.
-            </Typography.Paragraph>
-          </header>
-
-          <Form
-            form={form}
-            layout="vertical"
-            size="large"
-            className="login-form"
-            requiredMark="optional"
-            initialValues={{ remember: false }}
-            onFinish={submit}
+    <Theme theme={themes[defaultThemeSlug]}>
+      <main className="gp-login-page">
+        <Grid
+          columns={{ minWidth: 360, max: 2, repeat: 'fit' }}
+          gap={0}
+          minHeight="100vh"
+          className="gp-login-grid"
+        >
+          <section
+            className="gp-login-story"
+            aria-label="Giới thiệu hệ thống Gia Phú"
           >
-            <Form.Item
-              name="username"
-              label="Tên đăng nhập"
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên đăng nhập.' },
-              ]}
+            <VStack
+              height="100%"
+              gap={8}
+              padding={8}
+              className="gp-login-story-stack"
             >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="Nhập tên đăng nhập"
-                autoComplete="username"
-              />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[{ required: true, message: 'Vui lòng nhập mật khẩu.' }]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="Nhập mật khẩu"
-                autoComplete="current-password"
-              />
-            </Form.Item>
-            <div className="login-form-options">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox>Ghi nhớ tài khoản</Checkbox>
-              </Form.Item>
-              <span>Liên hệ quản trị viên nếu quên mật khẩu</span>
-            </div>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitting}
-              block
-              className="login-submit"
-              icon={<ArrowRightOutlined />}
-              iconPosition="end"
-            >
-              Đăng nhập
-            </Button>
-          </Form>
+              <header className="gp-login-brand">
+                <HStack gap={3} vAlign="center">
+                  <HStack
+                    className="gp-login-logo"
+                    hAlign="center"
+                    vAlign="center"
+                    aria-hidden="true"
+                  >
+                    <Icon icon={CubeIcon} size="lg" />
+                  </HStack>
+                  <VStack gap={0}>
+                    <Text type="large" weight="bold" color="inherit">
+                      GIA PHÚ
+                    </Text>
+                    <Text type="supporting" color="inherit">
+                      WATER DELIVERY
+                    </Text>
+                  </VStack>
+                </HStack>
+              </header>
 
-          <div className="login-demo">
-            <div className="login-demo-heading">
-              <span>Tài khoản trình diễn</span>
-              <small>Chọn để điền nhanh</small>
-            </div>
-            <div className="login-demo-grid">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.username}
-                  type="button"
-                  onClick={() =>
-                    selectDemoAccount(account.username, account.password)
-                  }
+              <VStack
+                gap={6}
+                width="100%"
+                maxWidth="42rem"
+                className="gp-login-story-content"
+              >
+                <HStack gap={2} vAlign="center" className="gp-login-status">
+                  <Icon icon={CheckCircleIcon} color="success" size="sm" />
+                  <Text type="supporting" weight="semibold" color="inherit">
+                    Hệ thống đang hoạt động
+                  </Text>
+                </HStack>
+
+                <VStack gap={3}>
+                  <Heading
+                    level={1}
+                    type="display-1"
+                    color="inherit"
+                    className="gp-login-story-title"
+                  >
+                    Vận hành giao nước, liền mạch từng đơn.
+                  </Heading>
+                  <Text
+                    type="large"
+                    color="inherit"
+                    className="gp-login-story-description"
+                  >
+                    Một không gian chung để đội ngũ Gia Phú quản lý bán hàng,
+                    kho, giao nhận và công nợ rõ ràng mỗi ngày.
+                  </Text>
+                </VStack>
+
+                <Grid
+                  columns={{ minWidth: 150, max: 3, repeat: 'fit' }}
+                  gap={3}
+                  className="gp-login-highlights"
                 >
-                  <span>{account.label}</span>
-                  <code>{account.username}</code>
-                </button>
-              ))}
-            </div>
-          </div>
+                  {operatingHighlights.map((item) => (
+                    <HStack
+                      key={item.title}
+                      gap={3}
+                      vAlign="center"
+                      className="gp-login-highlight"
+                    >
+                      <Icon icon={item.icon} color="inherit" size="lg" />
+                      <VStack gap={0}>
+                        <Text weight="bold" color="inherit">
+                          {item.title}
+                        </Text>
+                        <Text type="supporting" color="inherit">
+                          {item.description}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  ))}
+                </Grid>
+              </VStack>
 
-          <footer className="login-form-footer">
-            © 2026 Gia Phú Water Delivery
-          </footer>
-        </div>
-      </section>
-    </main>
+              <footer className="gp-login-story-footer">
+                <Text type="supporting" color="inherit">
+                  Quản lý tập trung · Vận hành minh bạch · Phục vụ tận tâm
+                </Text>
+              </footer>
+            </VStack>
+          </section>
+
+          <section className="gp-login-auth" aria-label="Đăng nhập nhân viên">
+            <VStack
+              gap={6}
+              width="100%"
+              maxWidth="28rem"
+              className="gp-login-auth-content"
+            >
+              <header>
+                <VStack gap={2}>
+                  <Text
+                    type="supporting"
+                    weight="bold"
+                    color="accent"
+                    className="gp-login-kicker"
+                  >
+                    CỔNG NHÂN VIÊN
+                  </Text>
+                  <Heading level={1} type="display-2">
+                    Chào mừng trở lại
+                  </Heading>
+                  <Text color="secondary">
+                    Đăng nhập để tiếp tục công việc của bạn hôm nay.
+                  </Text>
+                </VStack>
+              </header>
+
+              {errorMessage ? (
+                <Banner
+                  status="error"
+                  title="Đăng nhập chưa thành công"
+                  description={errorMessage}
+                  container="card"
+                />
+              ) : null}
+
+              <form onSubmit={submit} noValidate>
+                <VStack gap={4}>
+                  <TextInput
+                    label="Tên đăng nhập"
+                    value={username}
+                    onChange={(value) => {
+                      setUsername(value)
+                      setErrorMessage(null)
+                    }}
+                    placeholder="Nhập tên đăng nhập"
+                    startIcon={<Icon icon={UserIcon} />}
+                    autoComplete="username"
+                    hasAutoFocus
+                    aria-required="true"
+                    size="lg"
+                    width="100%"
+                    status={
+                      hasSubmitted && !username.trim()
+                        ? {
+                            type: 'error',
+                            message: 'Vui lòng nhập tên đăng nhập.',
+                          }
+                        : undefined
+                    }
+                  />
+
+                  <TextInput
+                    label="Mật khẩu"
+                    type="password"
+                    value={password}
+                    onChange={(value) => {
+                      setPassword(value)
+                      setErrorMessage(null)
+                    }}
+                    placeholder="Nhập mật khẩu"
+                    startIcon={<Icon icon={LockClosedIcon} />}
+                    autoComplete="current-password"
+                    aria-required="true"
+                    size="lg"
+                    width="100%"
+                    status={
+                      hasSubmitted && !password
+                        ? {
+                            type: 'error',
+                            message: 'Vui lòng nhập mật khẩu.',
+                          }
+                        : undefined
+                    }
+                  />
+
+                  <HStack
+                    gap={3}
+                    hAlign="between"
+                    vAlign="center"
+                    wrap="wrap"
+                    className="gp-login-options"
+                  >
+                    <CheckboxInput
+                      label="Ghi nhớ tài khoản"
+                      value={remember}
+                      onChange={setRemember}
+                      size="sm"
+                    />
+                    <Text type="supporting" color="secondary">
+                      Quên mật khẩu? Liên hệ quản trị viên
+                    </Text>
+                  </HStack>
+
+                  <Button
+                    label="Đăng nhập"
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    width="100%"
+                    isLoading={submitting}
+                    endContent={<Icon icon={ArrowRightIcon} />}
+                  />
+                </VStack>
+              </form>
+
+              <section className="gp-login-demo" aria-label="Tài khoản trình diễn">
+                <VStack gap={3}>
+                  <HStack
+                    gap={2}
+                    hAlign="between"
+                    vAlign="center"
+                    className="gp-login-demo-heading"
+                  >
+                    <Text type="label" weight="semibold">
+                      Tài khoản trình diễn
+                    </Text>
+                    <Text type="supporting" color="secondary">
+                      Chọn để điền nhanh
+                    </Text>
+                  </HStack>
+                  <Grid
+                    columns={{ minWidth: 145, max: 2, repeat: 'fit' }}
+                    gap={2}
+                    className="gp-login-demo-grid"
+                  >
+                    {demoAccounts.map((account) => (
+                      <Button
+                        key={account.username}
+                        label={`${account.label} · ${account.username}`}
+                        variant="secondary"
+                        size="sm"
+                        width="100%"
+                        onClick={() => selectDemoAccount(account)}
+                      />
+                    ))}
+                  </Grid>
+                </VStack>
+              </section>
+
+              <footer className="gp-login-auth-footer">
+                <Text type="supporting" color="secondary" justify="center">
+                  © 2026 Gia Phú Water Delivery
+                </Text>
+              </footer>
+            </VStack>
+          </section>
+        </Grid>
+      </main>
+    </Theme>
   )
 }

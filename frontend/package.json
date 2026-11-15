@@ -13,6 +13,10 @@
   "dependencies": {
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
+    "@astryxdesign/core": "^0.7.16",
+    "@astryxdesign/theme-neutral": "^0.7.16",
+    "@heroicons/react": "^2.2.0",
+    "@stylexjs/stylex": "^0.19.2",
     "antd": "^6.2.1",
     "axios": "^1.13.5",
     "dayjs": "^1.11.19",
@@ -21,6 +25,7 @@
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
+    "@astryxdesign/cli": "^0.7.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

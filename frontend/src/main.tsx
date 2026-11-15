@@ -7,6 +7,8 @@ import 'dayjs/locale/vi'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
+import '@astryxdesign/core/reset.css'
+import '@astryxdesign/core/astryx.css'
 import './styles.css'
 
 dayjs.locale('vi')

@@ -192,12 +192,16 @@ Delivery. Cả API và router frontend đều kiểm tra vai trò.
 - `/inventory`: tồn hiện tại, sản phẩm sắp hết, nhập kho và lịch sử thay đổi.
 - `/deliveries`: danh sách giao được phân công và các thao tác giao hàng.
 - `/finance`: tổng hợp công nợ, thu tiền từng phần và lịch sử giao/thu hồi vỏ.
-- `/reports`: xuất Excel doanh thu, công nợ, tồn kho và hiệu suất giao hàng.
+- `/reports`: xuất Excel doanh thu, công nợ, tồn kho và hiệu suất giao hàng theo
+  biểu mẫu doanh nghiệp, có chỉ số tổng hợp, bảng chi tiết, dòng tổng và cấu hình
+  in A4.
 - `/audit`: tra cứu dữ liệu trước/sau của các thao tác vận hành quan trọng.
 - `/users`: quản lý, khóa/mở và đổi mật khẩu tài khoản.
 
-Tại chi tiết đơn hàng, Admin/Sales có thể tải hóa đơn PDF gồm tiền hàng, tiền
-cọc, số đã thanh toán, số còn phải thu và chi tiết vỏ bình.
+Tại chi tiết đơn hàng, Admin/Sales có thể tải hóa đơn PDF kiêm phiếu giao nhận.
+Biểu mẫu gồm thông tin khách hàng, bảng hàng hóa, tiền cọc, số đã thanh toán,
+số còn phải thu, số tiền bằng chữ, lịch sử thanh toán, đối soát vỏ bình và khu
+vực ký xác nhận.
 
 Giao diện sử dụng tiếng Việt, có thông báo kết quả, hộp thoại xác nhận thao tác
 nguy hiểm, màu theo trạng thái và bố cục responsive cơ bản.
@@ -267,9 +271,9 @@ Kết quả kiểm tra tại thời điểm bàn giao:
 | Hạng mục | Kết quả |
 |---|---|
 | Backend build | Thành công, 0 lỗi và 0 cảnh báo |
-| Backend tests | 226/226 đạt |
+| Backend tests | 228/228 đạt |
 | EF migration model | Không có thay đổi chưa tạo migration |
-| Frontend tests | 19/19 đạt |
+| Frontend tests | 21/21 đạt |
 | Frontend production build | Thành công |
 | SQL Server seed | Thành công với đủ dữ liệu minh họa |
 
@@ -288,6 +292,14 @@ Kịch bản demo khuyến nghị:
 
 Bộ seed có sẵn đơn `DEMO-REV-01` ở trạng thái thanh toán một phần, một giao dịch
 vỏ bình và tiền cọc để màn hình Tài chính có dữ liệu ngay khi demo.
+
+## Báo cáo đồ án
+
+- [Bản Word hoàn thiện](docs/bao-cao/Bao-cao-do-an-Gia-Phu-hoan-thien.docx)
+- [Bản PDF hoàn thiện](docs/bao-cao/Bao-cao-do-an-Gia-Phu-hoan-thien.pdf)
+
+Báo cáo đã cập nhật các chức năng công nợ, vỏ bình, hóa đơn PDF, báo cáo Excel,
+nhật ký hệ thống, giao diện đăng nhập mới, sơ đồ và ảnh chụp từ hệ thống đang chạy.
 
 ## Triển khai và sao lưu
 

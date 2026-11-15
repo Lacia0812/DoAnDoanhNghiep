@@ -16,6 +16,14 @@ public sealed class InvoiceServiceTests
             .UseInMemoryDatabase($"invoice-tests-{Guid.NewGuid():N}")
             .Options;
         await using var db = new AppDbContext(options);
+        db.Users.Add(new User
+        {
+            Id = 1,
+            FullName = "Nhân viên kiểm thử",
+            Username = "tester",
+            PasswordHash = "not-used",
+            Role = UserRole.Sales
+        });
         db.Customers.Add(new Customer
         {
             Id = 1,
@@ -68,7 +76,7 @@ public sealed class InvoiceServiceTests
         var result = await new InvoiceService(db).GenerateAsync(1, CancellationToken.None);
 
         Assert.Equal("HoaDon-DH-PDF-01.pdf", result.FileName);
-        Assert.True(result.Content.Length > 1_000);
+        Assert.True(result.Content.Length > 5_000);
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(result.Content, 0, 4));
     }
 }
