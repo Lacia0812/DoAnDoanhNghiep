@@ -119,7 +119,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Theme theme={themes[defaultThemeSlug]}>
+    <Theme theme={themes[defaultThemeSlug]} mode="light">
       <main className="gp-login-page">
         <Grid
           columns={{ minWidth: 360, max: 2, repeat: 'fit' }}

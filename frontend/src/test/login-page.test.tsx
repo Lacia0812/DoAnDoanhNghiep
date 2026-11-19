@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginPage from '../pages/LoginPage'
@@ -15,10 +16,37 @@ vi.mock('../contexts/AuthContext', () => ({
   useAuth: () => auth,
 }))
 
+vi.mock('@astryxdesign/core/theme', () => ({
+  Theme: ({
+    children,
+    mode = 'system',
+  }: {
+    children: ReactNode
+    mode?: 'light' | 'dark' | 'system'
+  }) => (
+    <div data-testid="astryx-theme" data-mode={mode}>
+      {children}
+    </div>
+  ),
+}))
+
 describe('màn hình đăng nhập Astryx', () => {
   beforeEach(() => {
     auth.login.mockReset()
     localStorage.clear()
+  })
+
+  it('luôn khóa Astryx ở chế độ sáng dù hệ thống có thể dùng dark mode', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByTestId('astryx-theme')).toHaveAttribute(
+      'data-mode',
+      'light',
+    )
   })
 
   it('điền đúng tài khoản trình diễn khi người dùng chọn vai trò', async () => {
